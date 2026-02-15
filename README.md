@@ -1,10 +1,10 @@
 # AI Lifeguard
 
+A lightweight Python library that monitors AI agent activity for security threats. Scan your codebase in development, guard inputs at runtime in production.
+
 ---
 ## ⚠️ This is a work in progress and published _as is_. Test before use in production code.
 
-
-A lightweight Python library that monitors AI agent activity for security threats. Scan your codebase in development, guard inputs at runtime in production.
 
 ## The Problem
 
