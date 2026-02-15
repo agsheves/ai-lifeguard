@@ -2,11 +2,6 @@
 
 A lightweight Python library that monitors AI agent activity for security threats. Scan your codebase in development, guard inputs at runtime in production.
 
-<img width="352" height="348" alt="buchannon" src="https://github.com/user-attachments/assets/b1c81327-d468-4ef0-9080-1f41b68e2569" />
-
-_Helping you stay safe out there_
-(credit: baywatch.fandom.com)
-
 ## The Problem
 
 AI agents can read files, run commands, make network connections, and interact with MCP servers. That's powerful — and risky. A prompt injection can trick an agent into exfiltrating `.env` files. A typosquatted URL can go unnoticed. An MCP server can request permissions it doesn't need.
@@ -160,3 +155,12 @@ guard.help()  # prints full method reference
 ## License
 
 MIT
+
+---
+
+Stay safe out there
+
+<img width="352" height="348" alt="buchannon" src="https://github.com/user-attachments/assets/b1c81327-d468-4ef0-9080-1f41b68e2569" />
+
+
+(credit: baywatch.fandom.com)
