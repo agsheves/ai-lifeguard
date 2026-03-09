@@ -1,6 +1,7 @@
 import re
 import time
 import logging
+import threading
 from . import config
 from .models import ThreatResult, ScanReport
 from ._scanner import walk_files, extract_matches
@@ -15,6 +16,7 @@ FILE_SOURCE_PATTERNS = re.compile(
 )
 
 _access_log = []
+_access_lock = threading.Lock()
 BULK_THRESHOLD = 20
 BULK_WINDOW = 5
 
@@ -89,16 +91,18 @@ def scan_files(directory):
 
 
 def reset_bulk_tracker():
-    _access_log.clear()
+    with _access_lock:
+        _access_log.clear()
 
 
 def _check_bulk_access(path):
     now = time.time()
-    _access_log.append(now)
-    cutoff = now - BULK_WINDOW
-    while _access_log and _access_log[0] < cutoff:
-        _access_log.pop(0)
-    return len(_access_log) >= BULK_THRESHOLD
+    with _access_lock:
+        _access_log.append(now)
+        cutoff = now - BULK_WINDOW
+        while _access_log and _access_log[0] < cutoff:
+            _access_log.pop(0)
+        return len(_access_log) >= BULK_THRESHOLD
 
 
 def _level_for(category):

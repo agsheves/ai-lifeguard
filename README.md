@@ -122,6 +122,7 @@ ai_lifeguard:
   trusted_mcps:
     - name: "filesystem"
       publisher: "anthropic"
+
 ```
 
 ```python

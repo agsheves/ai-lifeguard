@@ -1,1 +1,24 @@
-# Contains BUCHANNON specific configurations that may differ from the existing system configs.
+ai_lifeguard:
+  mode: production
+
+  allowed_domains:
+    - "api.openai.com"
+    - "api.anthropic.com"
+
+  trusted_mcps:
+    - name: "filesystem"
+      publisher: "anthropic"
+
+  orchestrator:
+    max_workers: 4
+    routing:
+      command: serial
+      file_access: serial
+      prompt: parallel
+      endpoint: parallel
+      mcp: parallel
+    severity_map:
+      low: log
+      medium: alert
+      high: isolate
+      critical: kill

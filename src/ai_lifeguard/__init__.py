@@ -1,5 +1,8 @@
 import logging
 from .models import ThreatResult, ScanReport
+from .stream_models import InputType, ExecutionPath, OrchestratorConfig
+from .orchestrator import StreamOrchestrator
+from .kill_switch import KillSwitch
 from . import config as _config
 from . import command_validator
 from . import file_access_monitor
@@ -8,7 +11,11 @@ from . import connection_validator
 from . import mcp_guardian
 from .help import show_help
 
-__all__ = ["Lifeguard", "ThreatResult", "ScanReport"]
+__all__ = [
+    "Lifeguard", "ThreatResult", "ScanReport",
+    "StreamOrchestrator", "InputType", "ExecutionPath", "OrchestratorConfig",
+    "KillSwitch",
+]
 
 log = logging.getLogger("ai_lifeguard")
 
@@ -111,3 +118,10 @@ class Lifeguard:
     def _handle_report(self, report):
         for threat in report.threats:
             self._handle(threat)
+
+    # --- Stream Orchestrator ---
+
+    def create_orchestrator(self, config=None, **kwargs):
+        if config is None:
+            config = OrchestratorConfig(on_threat=self.on_threat, **kwargs)
+        return StreamOrchestrator(config=config, lifeguard_instance=self)

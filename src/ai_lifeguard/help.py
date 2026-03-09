@@ -39,6 +39,38 @@ Production callbacks:
 
   guard = Lifeguard(mode="production", on_threat=alert)
 
+Stream Orchestrator — hybrid serial/parallel checking:
+
+  orch = guard.create_orchestrator(
+      isolation_callbacks=[disable_chat],
+      kill_callbacks=[kill_process],
+  )
+
+  handle = orch.submit(InputType.COMMAND, cmd, source_id="user-42")
+  handle = orch.submit(InputType.PROMPT, text, source_id="session-7")
+
+  handles = orch.submit_batch([
+      (InputType.COMMAND, cmd, "src-1"),
+      (InputType.PROMPT, text, "src-2"),
+  ])
+
+  results = orch.wait_all(handles)
+
+  Serial checks (COMMAND, FILE_ACCESS) block until complete.
+  Parallel checks (PROMPT, ENDPOINT, MCP) run in background threads.
+
+Kill Switch — automatic escalation on threat detection:
+
+  Severity     Response
+  low          Log only
+  medium       Log + on_threat callback
+  high         Log + on_threat + isolation callbacks
+  critical     Log + on_threat + isolation + kill callbacks
+
+  orch.kill_switch.engaged     True if any threat triggered isolation
+  orch.kill_switch.event_log   Audit trail of all engagements
+  orch.kill_switch.reset()     Clear engaged state after review
+
 Config:
 
   guard = Lifeguard.from_config("config.yaml")   # or .json
