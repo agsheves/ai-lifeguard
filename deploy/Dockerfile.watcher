@@ -3,6 +3,7 @@ WORKDIR /app
 COPY pyproject.toml README.md LICENSE ./
 COPY src ./src
 RUN pip install --no-cache-dir .
+ENV PYTHONUNBUFFERED=1
 ENV WATCH_INTERVAL=900
 ENV GITHUB_REPO=agsheves/ai-lifeguard
 CMD ai-lifeguard watch --dir /app --interval "$WATCH_INTERVAL" --github-repo "$GITHUB_REPO"
