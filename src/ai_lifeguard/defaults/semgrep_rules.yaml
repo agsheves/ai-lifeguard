@@ -1,0 +1,88 @@
+# AI Lifeguard Semgrep rule pack — MIT. Targets risks common in AI-agent code.
+rules:
+  - id: ai-lifeguard-subprocess-shell-true-dynamic
+    languages: [python]
+    severity: ERROR
+    message: subprocess with shell=True and a non-literal command lets injected text run as shell
+    metadata: {cwe: ["CWE-78"], category: security}
+    patterns:
+      - pattern: subprocess.$F(..., shell=True, ...)
+      - pattern-not: subprocess.$F("...", ..., shell=True, ...)
+  - id: ai-lifeguard-os-system-dynamic
+    languages: [python]
+    severity: ERROR
+    message: os.system/os.popen with a non-literal command runs attacker-controlled text as shell
+    metadata: {cwe: ["CWE-78"], category: security}
+    patterns:
+      - pattern-either:
+          - pattern: os.system($X)
+          - pattern: os.popen($X)
+      - pattern-not: os.system("...")
+      - pattern-not: os.popen("...")
+  - id: ai-lifeguard-eval-exec-dynamic
+    languages: [python]
+    severity: ERROR
+    message: eval/exec on a non-literal string executes whatever an LLM or user supplied
+    metadata: {cwe: ["CWE-95"], category: security}
+    patterns:
+      - pattern-either:
+          - pattern: eval($X)
+          - pattern: exec($X)
+      - pattern-not: eval("...")
+      - pattern-not: exec("...")
+  - id: ai-lifeguard-yaml-unsafe-load
+    languages: [python]
+    severity: WARNING
+    message: yaml.load without SafeLoader can instantiate arbitrary objects; use yaml.safe_load
+    metadata: {cwe: ["CWE-502"], category: security}
+    pattern-either:
+      - pattern: yaml.load($X)
+      - pattern: yaml.load($X, Loader=yaml.Loader)
+      - pattern: yaml.load($X, Loader=yaml.UnsafeLoader)
+      - pattern: yaml.unsafe_load($X)
+  - id: ai-lifeguard-pickle-load-dynamic
+    languages: [python]
+    severity: WARNING
+    message: pickle.load(s) on untrusted data executes arbitrary code during deserialisation
+    metadata: {cwe: ["CWE-502"], category: security}
+    pattern-either:
+      - pattern: pickle.loads($X)
+      - pattern: pickle.load($X)
+  - id: ai-lifeguard-requests-verify-false
+    languages: [python]
+    severity: WARNING
+    message: verify=False disables TLS certificate checks
+    metadata: {cwe: ["CWE-295"], category: security}
+    pattern: requests.$F(..., verify=False, ...)
+  - id: ai-lifeguard-urlopen-dynamic-url
+    languages: [python]
+    severity: WARNING
+    message: URL built from runtime data passed to urlopen; validate it first (see Lifeguard.check_endpoint)
+    metadata: {cwe: ["CWE-918"], category: security}
+    pattern-either:
+      - pattern: urllib.request.urlopen(f"...", ...)
+      - pattern: urllib.request.urlopen($A + $B, ...)
+      - pattern: urlopen(f"...", ...)
+      - pattern: urlopen($A + $B, ...)
+  - id: ai-lifeguard-tempfile-mktemp
+    languages: [python]
+    severity: WARNING
+    message: tempfile.mktemp is racy; use NamedTemporaryFile or mkstemp
+    metadata: {cwe: ["CWE-377"], category: security}
+    pattern: tempfile.mktemp(...)
+  - id: ai-lifeguard-hardcoded-secret
+    languages: [python]
+    severity: ERROR
+    message: Hardcoded credential assignment; load secrets from the environment
+    metadata: {cwe: ["CWE-798"], category: security}
+    pattern-regex: '(?i)\b(?:api[_-]?key|secret|token|password|passwd)\s*=\s*["''][A-Za-z0-9_\-/+=]{16,}["'']'
+  - id: ai-lifeguard-llm-output-to-path
+    languages: [python]
+    severity: WARNING
+    message: File path derived from LLM output or a prompt; check it with Lifeguard.check_file_access first
+    metadata: {cwe: ["CWE-22"], category: security}
+    patterns:
+      - pattern: open($P, ...)
+      - metavariable-regex:
+          metavariable: $P
+          regex: '(?i).*(prompt|llm|completion|response|model_output).*'

@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "ai-lifeguard"
-version = "0.1.0"
+version = "0.2.0"
 description = "AI agent security monitoring — scan code in dev, guard inputs in production"
 license = {text = "MIT"}
 requires-python = ">=3.10"
@@ -12,13 +12,18 @@ readme = "README.md"
 
 [project.optional-dependencies]
 yaml = ["pyyaml>=6.0"]
+sast = ["semgrep>=1.100"]
+security = ["semgrep>=1.100", "pyyaml>=6.0"]
 semantic = ["torch", "transformers"]
+
+[project.scripts]
+ai-lifeguard = "ai_lifeguard.cli:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
 
 [tool.setuptools.package-data]
-ai_lifeguard = ["defaults/*.json"]
+ai_lifeguard = ["defaults/*.json", "defaults/*.yaml"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
