@@ -1,5 +1,5 @@
 HELP_TEXT = """
-AI Lifeguard v0.1.0
+AI Lifeguard v0.2.0
 ====================
 
 Two modes, one class:
@@ -15,6 +15,20 @@ Dev — scan your codebase:
   guard.scan_prompts("./src")      Find prompt injection risks
   guard.scan_connections("./src")  Find suspicious URLs/endpoints
   guard.scan_mcps("./src")         Find untrusted MCP configs
+  guard.scan_all("./src", network=True)   Also run SAST, CVE and Sonar scans
+
+Code & dependency security (opt-in; shells out or uses the network):
+
+  guard.scan_sast("./src")         Semgrep: bundled rule pack + p/python + p/default
+  guard.scan_dependencies(".")     Match requirements/pyproject/package.json against cve.now
+  guard.scan_sonar()               Pull open issues + quality gate from SonarQube (config: sonar:)
+  guard.check_dependency("pkg==1.0")      Check one dependency against the CVE feed
+  guard.watch_dependencies(".", interval=900, orchestrator=orch, notifier=None)
+                                   Background CveWatcher; alerts once per new CVE match
+
+  pip install ai-lifeguard[sast]   installs semgrep
+  ai-lifeguard scan --dir . --sast --deps --fail-on high     CLI for CI
+  ai-lifeguard watch --dir . --github-repo owner/name        Hosted watcher -> GitHub issues
 
 Production — check individual inputs:
 
@@ -23,6 +37,7 @@ Production — check individual inputs:
   guard.check_prompt(text)              Check for prompt injection
   guard.check_endpoint(url)             Validate a URL/endpoint
   guard.check_mcp(name, permissions)    Validate an MCP connection
+  guard.check_dependency(spec)          Check a dependency against the CVE feed
 
 Every method returns a ThreatResult:
 
@@ -57,7 +72,7 @@ Stream Orchestrator — hybrid serial/parallel checking:
   results = orch.wait_all(handles)
 
   Serial checks (COMMAND, FILE_ACCESS) block until complete.
-  Parallel checks (PROMPT, ENDPOINT, MCP) run in background threads.
+  Parallel checks (PROMPT, ENDPOINT, MCP, DEPENDENCY) run in background threads.
 
 Kill Switch — automatic escalation on threat detection:
 

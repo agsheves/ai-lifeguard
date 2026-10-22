@@ -1,0 +1,14 @@
+# fly launch --no-deploy --copy-config --name ai-lifeguard-watcher ; fly secrets set GITHUB_TOKEN=... ; fly deploy
+app = "ai-lifeguard-watcher"
+primary_region = "lhr"
+
+[build]
+  dockerfile = "Dockerfile.watcher"
+
+[env]
+  WATCH_INTERVAL = "900"
+  GITHUB_REPO = "agsheves/ai-lifeguard"
+
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "256mb"

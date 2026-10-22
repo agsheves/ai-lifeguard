@@ -3,7 +3,7 @@ import logging
 import re
 import threading
 import time
-import urllib.request
+from ._http import fetch_json
 from .models import ThreatResult, ScanReport
 from .stream_models import InputType, CheckInput
 from ._scanner import walk_named_files
@@ -50,9 +50,7 @@ def fetch_feed(url=FEED_URL, timeout=FEED_TIMEOUT, ttl=FEED_TTL):
         if cached and time.time() - cached[0] < ttl:
             return cached[1]
     try:
-        req = urllib.request.Request(url, headers={"User-Agent": "ai-lifeguard"})
-        with urllib.request.urlopen(req, timeout=timeout) as resp:
-            items = json.loads(resp.read().decode("utf-8")).get("items", [])
+        items = (fetch_json(url, timeout=timeout) or {}).get("items", [])
     except Exception as e:
         log.warning("CVE feed unavailable (%s): %s", url, e)
         return []

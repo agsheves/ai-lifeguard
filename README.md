@@ -21,6 +21,9 @@ AI Lifeguard catches these threats with fast, local, regex-based checks. No exte
 | **prompt_checker** | Instruction overrides, role hijacking, delimiter injection, privilege escalation |
 | **connection_validator** | Homograph attacks, typosquatting, punycode spoofing, IP obfuscation, subdomain spoofing |
 | **mcp_guardian** | Name spoofing, permission overreach, untrusted servers, tool shadowing |
+| **dependency_auditor** | Dependencies named in new CVEs (cve.now feed), background watch, GitHub issue notifier |
+| **sast_scanner** | Semgrep static analysis: bundled rule pack for agent code plus registry packs |
+| **sonar_adapter** | Open SonarQube issues and quality-gate status pulled into the same report format |
 
 ## Install
 
@@ -28,10 +31,12 @@ AI Lifeguard catches these threats with fast, local, regex-based checks. No exte
 pip install ai-lifeguard
 ```
 
-Zero dependencies. Optional YAML config support:
+Zero dependencies. Optional extras:
 
 ```bash
-pip install ai-lifeguard[yaml]
+pip install ai-lifeguard[yaml]      # YAML config files
+pip install ai-lifeguard[sast]      # Semgrep for scan_sast()
+pip install ai-lifeguard[security]  # both
 ```
 
 ## Quick Start
@@ -106,6 +111,39 @@ if not result.safe:
     deny_connection(result)
 ```
 
+## Code & Dependency Security
+
+The five behaviour guards above are offline and regex-only. Since AI made bug-hunting cheap, the code itself and its dependencies need the same attention, so v0.2 adds three opt-in scanners. They shell out or use the network, so they never run unless you ask.
+
+```python
+guard = Lifeguard.from_config("config.yaml")
+
+report = guard.scan_sast("./src")          # Semgrep: bundled rule pack + p/python + p/default
+report = guard.scan_dependencies(".")      # requirements/pyproject/package.json vs cve.now feed
+report = guard.scan_sonar()                # open SonarQube issues + quality gate (needs SONAR_TOKEN)
+reports = guard.scan_all("./src", network=True)   # everything
+
+result = guard.check_dependency("requests==2.31.0")   # one package, production mode
+```
+
+**Watch for new CVEs at runtime.** A daemon thread polls the feed and alerts once per new match. With an orchestrator it goes through the kill switch like any other threat; a dependency CVE is an alert, never `critical`.
+
+```python
+orch = guard.create_orchestrator()
+watcher = guard.watch_dependencies(".", interval=900, orchestrator=orch)
+...
+watcher.stop()
+```
+
+**CLI for CI and servers.**
+
+```bash
+ai-lifeguard scan --dir src --sast --deps --fail-on high      # exit 1 on high/critical
+ai-lifeguard watch --dir . --github-repo owner/name           # opens a GitHub issue per new CVE match
+```
+
+The bundled Semgrep rules live in `src/ai_lifeguard/defaults/semgrep_rules.yaml` (MIT). Registry packs are fetched by your own Semgrep install with metrics off; set `semgrep.registry: false` to stay offline. This repo runs all of this on itself in `.github/workflows/security.yml`; see `deploy/` for the hosted watcher and SonarQube server.
+
 ## Configuration
 
 Works out of the box with sensible defaults. Override only what you need:
@@ -123,6 +161,13 @@ ai_lifeguard:
     - name: "filesystem"
       publisher: "anthropic"
 
+  semgrep:
+    registry: true          # false = bundled rules only, no network
+
+  sonar:
+    host_url: "https://sonarcloud.io"   # or your SonarQube Community Build server
+    project_key: "org_project"
+    token_env: SONAR_TOKEN              # token is read from the environment, never from this file
 ```
 
 ```python

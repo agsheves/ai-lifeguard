@@ -17,8 +17,20 @@ ai_lifeguard:
       prompt: parallel
       endpoint: parallel
       mcp: parallel
+      dependency: parallel
     severity_map:
       low: log
       medium: alert
       high: isolate
       critical: kill
+
+  cve_feed_url: "https://cve.now/feed?format=json"
+
+  semgrep:
+    registry: true
+    timeout: 600
+
+  sonar:
+    host_url: "https://sonarcloud.io"
+    project_key: "agsheves_ai-lifeguard"
+    token_env: SONAR_TOKEN

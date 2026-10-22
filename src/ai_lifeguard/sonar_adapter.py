@@ -1,7 +1,6 @@
-import json
 import logging
 import urllib.parse
-import urllib.request
+from ._http import fetch_json
 from .models import ThreatResult, ScanReport
 
 log = logging.getLogger("ai_lifeguard.sonar_adapter")
@@ -12,11 +11,7 @@ PAGE_SIZE = 500
 
 
 def _get(url, token, timeout):
-    req = urllib.request.Request(url, headers={
-        "Authorization": f"Bearer {token}", "Accept": "application/json", "User-Agent": "ai-lifeguard",
-    })
-    with urllib.request.urlopen(req, timeout=timeout) as resp:
-        return json.loads(resp.read().decode("utf-8"))
+    return fetch_json(url, token=token, timeout=timeout)
 
 
 def fetch_issues(host_url, project_key, token, severities=DEFAULT_SEVERITIES, timeout=30):

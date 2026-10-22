@@ -1,8 +1,7 @@
-import json
 import logging
 import time
-import urllib.request
 import urllib.parse
+from ._http import fetch_json
 
 log = logging.getLogger("ai_lifeguard.github_notifier")
 
@@ -55,11 +54,7 @@ class GitHubIssueNotifier:
         return issue.get("html_url")
 
     def _request(self, method, path, data=None):
-        payload = json.dumps(data).encode("utf-8") if data is not None else None
-        req = urllib.request.Request(self.api_url + path, data=payload, method=method, headers={
-            "Authorization": f"Bearer {self._token}", "Accept": "application/vnd.github+json",
-            "X-GitHub-Api-Version": "2022-11-28", "User-Agent": "ai-lifeguard",
-            "Content-Type": "application/json",
-        })
-        with urllib.request.urlopen(req, timeout=self.timeout) as resp:
-            return json.loads(resp.read().decode("utf-8") or "null")
+        return fetch_json(
+            self.api_url + path, token=self._token, timeout=self.timeout, data=data, method=method,
+            headers={"Accept": "application/vnd.github+json", "X-GitHub-Api-Version": "2022-11-28"},
+        )

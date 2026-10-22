@@ -1,4 +1,5 @@
 import logging
+import os
 from .models import ThreatResult, ScanReport
 from .stream_models import InputType, ExecutionPath, OrchestratorConfig
 from .orchestrator import StreamOrchestrator
@@ -9,12 +10,17 @@ from . import file_access_monitor
 from . import prompt_checker
 from . import connection_validator
 from . import mcp_guardian
+from . import dependency_auditor
+from . import sast_scanner
+from . import sonar_adapter
+from .dependency_auditor import CveWatcher
+from .github_notifier import GitHubIssueNotifier
 from .help import show_help
 
 __all__ = [
     "Lifeguard", "ThreatResult", "ScanReport",
     "StreamOrchestrator", "InputType", "ExecutionPath", "OrchestratorConfig",
-    "KillSwitch",
+    "KillSwitch", "CveWatcher", "GitHubIssueNotifier",
 ]
 
 log = logging.getLogger("ai_lifeguard")
@@ -30,6 +36,7 @@ class Lifeguard:
         self._allowed_domains = self.config.get("allowed_domains", [])
         self._allowed_commands = self.config.get("allowed_commands", [])
         self._trusted_mcps = self.config.get("trusted_mcps", [])
+        self._feed_url = self.config.get("cve_feed_url", dependency_auditor.FEED_URL)
 
         if mode == "dev":
             logging.basicConfig(level=logging.WARNING, format="%(name)s: %(message)s")
@@ -70,16 +77,28 @@ class Lifeguard:
         self._handle(result)
         return result
 
+    def check_dependency(self, spec):
+        result = dependency_auditor.check_dependency(spec, feed_url=self._feed_url)
+        self._handle(result)
+        return result
+
     # --- Dev: bulk static analysis ---
 
-    def scan_all(self, directory="."):
-        return [
+    def scan_all(self, directory=".", network=False):
+        reports = [
             self.scan_commands(directory),
             self.scan_files(directory),
             self.scan_prompts(directory),
             self.scan_connections(directory),
             self.scan_mcps(directory),
         ]
+        if sast_scanner.semgrep_available():
+            reports.append(self.scan_sast(directory, registry=network))
+        if network:
+            reports.append(self.scan_dependencies(directory))
+            if self.config.get("sonar"):
+                reports.append(self.scan_sonar())
+        return reports
 
     def scan_commands(self, directory="."):
         report = command_validator.scan_commands(directory)
@@ -105,6 +124,47 @@ class Lifeguard:
         report = mcp_guardian.scan_mcps(directory, self._trusted_mcps or None)
         self._handle_report(report)
         return report
+
+    # --- Code & dependency security (opt-in: shells out or uses the network) ---
+
+    def scan_sast(self, directory=".", registry=None):
+        cfg = self.config.get("semgrep", {})
+        if registry is None:
+            registry = cfg.get("registry", True)
+        report = sast_scanner.scan_sast(
+            directory, configs=cfg.get("configs") or None, registry=registry,
+            timeout=cfg.get("timeout", 600),
+        )
+        self._handle_report(report)
+        return report
+
+    def scan_dependencies(self, directory="."):
+        report = dependency_auditor.scan_dependencies(directory, self._feed_url)
+        self._handle_report(report)
+        return report
+
+    def scan_sonar(self):
+        cfg = self.config.get("sonar", {})
+        token = os.environ.get(cfg.get("token_env", "SONAR_TOKEN"), "")
+        report = sonar_adapter.scan_sonar(
+            cfg.get("host_url", ""), cfg.get("project_key", ""), token,
+            severities=tuple(cfg.get("severities", sonar_adapter.DEFAULT_SEVERITIES)),
+        )
+        self._handle_report(report)
+        return report
+
+    def watch_dependencies(self, directory=".", interval=900, orchestrator=None,
+                           notifier=None, dependencies=None, start=True):
+        deps = dependencies or dependency_auditor.parse_manifests(directory)
+        watcher = CveWatcher(
+            deps, interval=interval, feed_url=self._feed_url,
+            on_threat=None if orchestrator else self._handle,
+            kill_switch=orchestrator.kill_switch if orchestrator else None,
+            notifier=notifier,
+        )
+        if start:
+            watcher.start()
+        return watcher
 
     # --- Internal ---
 
