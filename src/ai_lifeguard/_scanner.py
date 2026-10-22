@@ -1,4 +1,5 @@
 import re
+from fnmatch import fnmatch
 from pathlib import Path
 
 SOURCE_EXTENSIONS = {
@@ -19,6 +20,14 @@ def walk_files(directory, extensions=None):
         if SKIP_DIRS & set(path.parts):
             continue
         yield path
+
+
+def walk_named_files(directory, patterns):
+    for path in Path(directory).rglob("*"):
+        if not path.is_file() or SKIP_DIRS & set(path.parts):
+            continue
+        if any(fnmatch(path.name, pat) for pat in patterns):
+            yield path
 
 
 def extract_matches(filepath, pattern):

@@ -10,6 +10,7 @@ class InputType(Enum):
     PROMPT = "prompt"
     ENDPOINT = "endpoint"
     MCP = "mcp"
+    DEPENDENCY = "dependency"
 
 
 class ExecutionPath(Enum):
@@ -30,6 +31,7 @@ DEFAULT_ROUTING = {
     InputType.PROMPT: ExecutionPath.PARALLEL,
     InputType.ENDPOINT: ExecutionPath.PARALLEL,
     InputType.MCP: ExecutionPath.PARALLEL,
+    InputType.DEPENDENCY: ExecutionPath.PARALLEL,
 }
 
 DEFAULT_SEVERITY_MAP = {

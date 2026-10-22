@@ -215,3 +215,16 @@ def test_callback_error_does_not_crash():
     log = orch.kill_switch.event_log
     assert len(log[0].errors) > 0
     orch.shutdown()
+
+
+def test_parallel_dependency(monkeypatch):
+    from ai_lifeguard import dependency_auditor
+    feed = [{"id": "CVE-2026-9", "url": "", "title": "CVE-2026-9: RCE in PyYAML", "content_text": "PyYAML for Python"}]
+    monkeypatch.setattr(dependency_auditor, "fetch_feed", lambda *a, **k: feed)
+    orch = StreamOrchestrator()
+    assert orch._config.routing[InputType.DEPENDENCY] == ExecutionPath.PARALLEL
+    bad = orch.submit(InputType.DEPENDENCY, "pyyaml==6.0").wait(timeout=5.0)
+    good = orch.submit(InputType.DEPENDENCY, "numpy").wait(timeout=5.0)
+    assert not bad.safe and bad.matched_rule == "CVE-2026-9"
+    assert good.safe
+    orch.shutdown()

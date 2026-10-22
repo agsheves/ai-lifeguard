@@ -9,16 +9,17 @@ watch (dev scan + background watcher), hosted watcher that opens GitHub issues, 
 Core stays zero-dependency and offline; network/shell-out pieces are explicit opt-ins.
 
 ## Steps
-1. [ ] `_developer/` scaffold, tasks, Basecamp mirror
-2. [ ] `InputType.DEPENDENCY` + routing + dispatch + test
-3. [ ] `dependency_auditor` + `_scanner.walk_named_files` + tests
-4. [ ] `CveWatcher` + `Lifeguard.watch_dependencies` + tests
+1. [x] `_developer/` scaffold, tasks, Basecamp mirror
+2. [x] `InputType.DEPENDENCY` + routing + dispatch + test
+3. [x] `dependency_auditor` + `_scanner.walk_named_files` + tests
+4. [x] `CveWatcher` + `Lifeguard.watch_dependencies` + tests
 5. [ ] `sast_scanner` + `defaults/semgrep_rules.yaml` + pyproject extras + tests
 6. [ ] `sonar_adapter` + tests
 7. [ ] `github_notifier` + `cli` + entry point + tests
 8. [ ] `Lifeguard` wiring, help, README, config.yaml
 9. [ ] `.github/workflows/security.yml`, dependabot, sonar-project.properties
 10. [ ] `deploy/` Dockerfile.watcher, docker-compose.sonar.yml, README
-11. [ ] session notes, bloopers, version bump 0.2.0
+11. [x] session notes, bloopers, version bump 0.2.0
 
 ## Log
+- 2026-10-22 steps 1-4: scaffold c145321; AL-001..003 mirrored to Basecamp (10434381676/719/796); dependency_auditor + CveWatcher + InputType.DEPENDENCY, 116 tests green. Watcher levels capped at high (exploited) / medium / low — a dependency CVE is an alert, not an attack.

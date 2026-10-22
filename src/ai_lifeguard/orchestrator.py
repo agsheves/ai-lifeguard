@@ -11,6 +11,7 @@ from . import file_access_monitor
 from . import prompt_checker
 from . import connection_validator
 from . import mcp_guardian
+from . import dependency_auditor
 
 log = logging.getLogger("ai_lifeguard.orchestrator")
 
@@ -135,6 +136,8 @@ class StreamOrchestrator:
                 payload, allowed_domains),
             InputType.MCP: lambda: mcp_guardian.check_mcp(
                 payload, meta.get("permissions"), trusted_mcps),
+            InputType.DEPENDENCY: lambda: dependency_auditor.check_dependency(
+                payload),
         }
 
         handler = dispatch.get(check_input.input_type)
