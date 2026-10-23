@@ -6,3 +6,4 @@ Mistakes and corrections, newest first.
 - 2026-10-22: Module loggers and `Lifeguard._handle` both log each threat, so CLI output was doubled. CLI now silences the `ai_lifeguard` logger for `scan` and prints its own table.
 - 2026-10-22: Container logs showed nothing from the watcher because Python buffers stdout when not on a TTY. Always set PYTHONUNBUFFERED=1 in service Dockerfiles.
 - 2026-10-23: CI failed on Python 3.10 only: no tomllib, so parse_pyproject returned {} and its test failed. Local venv is 3.14, so the matrix caught it. Added a regex fallback and a test that forces tomllib absent.
+- 2026-10-23: `# nosemgrep` hides a finding from CLI output but Semgrep still writes it into SARIF, and GitHub code scanning shows it as an open alert. Fix the code (HTTP-only OpenerDirector) instead of suppressing. Also: fixtures of deliberately bad code must not end in `.py` or CodeQL default setup scans them; use `.py.txt`.

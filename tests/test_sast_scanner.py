@@ -81,7 +81,7 @@ needs_semgrep = pytest.mark.skipif(not ss.semgrep_available(), reason="semgrep n
 
 @needs_semgrep
 def test_rule_pack_fires_each_rule_once(tmp_path):
-    (tmp_path / "bad.py").write_text((FIXTURES / "semgrep_bad.py").read_text())
+    (tmp_path / "bad.py").write_text((FIXTURES / "semgrep_bad.py.txt").read_text())
     report = ss.scan_sast(tmp_path, registry=False)
     expected = {
         "subprocess-shell-true-dynamic", "os-system-dynamic", "eval-exec-dynamic", "yaml-unsafe-load",
@@ -95,5 +95,5 @@ def test_rule_pack_fires_each_rule_once(tmp_path):
 
 @needs_semgrep
 def test_rule_pack_clean_file(tmp_path):
-    (tmp_path / "ok.py").write_text((FIXTURES / "semgrep_clean.py").read_text())
+    (tmp_path / "ok.py").write_text((FIXTURES / "semgrep_clean.py.txt").read_text())
     assert ss.scan_sast(tmp_path, registry=False).clean

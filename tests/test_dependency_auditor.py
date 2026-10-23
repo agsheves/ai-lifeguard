@@ -1,7 +1,7 @@
 import json
 import sys
-import urllib.request
 import pytest
+from ai_lifeguard import _http
 from ai_lifeguard import dependency_auditor as da
 from ai_lifeguard.kill_switch import KillSwitch
 
@@ -26,7 +26,7 @@ def _no_network(monkeypatch):
     da.clear_feed_cache()
     def boom(*a, **k):
         raise AssertionError("network call attempted")
-    monkeypatch.setattr(urllib.request, "urlopen", boom)
+    monkeypatch.setattr(_http, "_open", boom)
     yield
     da.clear_feed_cache()
 
@@ -90,7 +90,7 @@ def test_fetch_feed_parses_and_caches(monkeypatch):
     def fake_open(req, timeout):
         calls.append(req.full_url)
         return Resp()
-    monkeypatch.setattr(urllib.request, "urlopen", fake_open)
+    monkeypatch.setattr(_http, "_open", fake_open)
     assert len(da.fetch_feed("https://example.test/feed")) == 4
     assert len(da.fetch_feed("https://example.test/feed")) == 4
     assert len(calls) == 1

@@ -1,6 +1,6 @@
 import json
-import urllib.request
 import pytest
+from ai_lifeguard import _http
 from ai_lifeguard import sonar_adapter as sa
 
 ISSUES_P1 = {"paging": {"total": 3}, "issues": [
@@ -64,6 +64,6 @@ def test_get_sends_bearer(monkeypatch):
     def fake_open(req, timeout):
         seen["auth"] = req.get_header("Authorization")
         return Resp()
-    monkeypatch.setattr(urllib.request, "urlopen", fake_open)
+    monkeypatch.setattr(_http, "_open", fake_open)
     assert sa._get("https://sonar.example/api/x", "tok", 5) == {"ok": 1}
     assert seen["auth"] == "Bearer tok"
