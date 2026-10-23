@@ -138,12 +138,35 @@ def parse_requirements(text):
     return deps
 
 
+def _parse_pyproject_fallback(text):
+    deps = {}
+    sections = re.finditer(r"^\[(project|project\.optional-dependencies|tool\.poetry\.dependencies)\]\s*$(.*?)(?=^\[|\Z)", text, re.M | re.S)
+    for section in sections:
+        name, body = section.group(1), section.group(2)
+        if name == "tool.poetry.dependencies":
+            for pkg, version in re.findall(r'^([A-Za-z0-9_.-]+)\s*=\s*"([^"]*)"', body, re.M):
+                if pkg.lower() != "python":
+                    deps[normalise(pkg)] = version.lstrip("^~=<>!") or None
+            continue
+        if name == "project":
+            m = re.search(r"^dependencies\s*=\s*\[(.*?)\]", body, re.M | re.S)
+            arrays = [m.group(1)] if m else []
+        else:
+            arrays = re.findall(r"=\s*\[(.*?)\]", body, re.S)
+        for arr in arrays:
+            for spec in re.findall(r"[\"']([^\"']+)[\"']", arr):
+                pkg, version = parse_spec(spec)
+                if pkg:
+                    deps[pkg] = version
+    return deps
+
+
 def parse_pyproject(text):
     try:
         import tomllib
     except ImportError:
-        log.warning("tomllib unavailable (Python < 3.11); skipping pyproject.toml")
-        return {}
+        log.info("tomllib unavailable (Python < 3.11); using regex fallback for pyproject.toml")
+        return _parse_pyproject_fallback(text)
     try:
         data = tomllib.loads(text)
     except tomllib.TOMLDecodeError as e:

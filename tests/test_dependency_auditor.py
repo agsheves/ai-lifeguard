@@ -1,4 +1,5 @@
 import json
+import sys
 import urllib.request
 import pytest
 from ai_lifeguard import dependency_auditor as da
@@ -109,17 +110,33 @@ Flask_Login
     assert deps == {"requests": "2.31.0", "pyyaml": "6.0", "uvicorn": "0.30", "flask-login": None}
 
 
-def test_parse_pyproject():
-    deps = da.parse_pyproject("""
+PYPROJECT = """
 [project]
-dependencies = ["httpx>=0.27", "pydantic"]
+name = "demo"
+dependencies = [
+    "httpx>=0.27",
+    "pydantic",
+]
 [project.optional-dependencies]
 yaml = ["pyyaml>=6.0"]
+dev = ["pytest", "ruff>=0.5"]
 [tool.poetry.dependencies]
 python = "^3.10"
 rich = "^13.0"
-""")
-    assert deps == {"httpx": "0.27", "pydantic": None, "pyyaml": "6.0", "rich": "13.0"}
+[tool.setuptools]
+zip-safe = false
+"""
+PYPROJECT_DEPS = {"httpx": "0.27", "pydantic": None, "pyyaml": "6.0", "pytest": None, "ruff": "0.5", "rich": "13.0"}
+
+
+def test_parse_pyproject():
+    assert da.parse_pyproject(PYPROJECT) == PYPROJECT_DEPS
+
+
+def test_parse_pyproject_without_tomllib(monkeypatch):
+    monkeypatch.setitem(sys.modules, "tomllib", None)
+    assert da.parse_pyproject(PYPROJECT) == PYPROJECT_DEPS
+    assert da._parse_pyproject_fallback(PYPROJECT) == PYPROJECT_DEPS
 
 
 def test_parse_package_json():
