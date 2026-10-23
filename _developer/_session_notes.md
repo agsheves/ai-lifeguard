@@ -1,6 +1,11 @@
 # Session notes
 Newest entry first. 150 words max per entry.
 
+## 2026-10-23T00:59Z Deep-Thought
+- Activity: first CI runs after Andrew pushed. Fixed Py3.10 pyproject parse (tomllib fallback), replaced nosemgrep with HTTP-only OpenerDirector, renamed bad fixtures to .py.txt, CodeQL action v4. Run 39881191703 all 6 jobs green; 0 open code-scanning alerts.
+- Decisions: suppress nothing in SARIF; fix code instead. Pass `-R agsheves/ai-lifeguard` to gh (local remote still points at old repo path; repoint denied by auto mode).
+- Next: Andrew merges Dependabot PRs #1 #2 (need rebase onto main) and does AL-001..003.
+
 ## 2026-10-22T21:22Z Deep-Thought
 - Activity: Andrew started OrbStack; built deploy/Dockerfile.watcher, ran `watch --once` in-container (4 deps, 0 matches, rc 0), default CMD with and without GITHUB_TOKEN.
 - Issue: stdout buffered in container hid the "Watching" line; added PYTHONUNBUFFERED=1 (bloopers).
