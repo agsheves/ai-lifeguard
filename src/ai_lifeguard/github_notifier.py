@@ -45,7 +45,8 @@ class GitHubIssueNotifier:
             f"**AI Lifeguard CVE watch** flagged a dependency match.\n\n"
             f"- Severity: `{result.level}`\n- Rule: `{cve}`\n- Detail: {result.description}\n"
             f"- Detected: {time.strftime('%Y-%m-%dT%H:%MZ', time.gmtime())}\n\n"
-            f"Review the advisory, upgrade or pin the dependency, then close this issue."
+            f"Review the advisory, upgrade or pin the dependency, then close this issue.\n\n"
+            f"_Source: [cve.now](https://cve.now) (CC BY 4.0), built on NVD data; not endorsed by NVD._"
         )
         issue = self._request("POST", f"/repos/{self.repo}/issues", {
             "title": f"[ai-lifeguard] {cve}: dependency match ({result.level})",

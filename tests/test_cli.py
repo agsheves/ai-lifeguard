@@ -37,6 +37,34 @@ def test_scan_json(fakes, capsys):
     assert data["threats"][0]["level"] == "high"
 
 
+def test_scan_registry_flag(monkeypatch, fakes):
+    seen = {}
+    monkeypatch.setattr(sast_scanner, "scan_sast", lambda d, **k: seen.update(k) or ScanReport("sast_scanner"))
+    cli.main(["scan", "--dir", str(fakes), "--sast"])
+    assert seen["registry"] is False
+    cli.main(["scan", "--dir", str(fakes), "--sast", "--registry"])
+    assert seen["registry"] is True
+
+
+def test_setup_reports_and_writes_env(monkeypatch, tmp_path, capsys):
+    for var in ("SEMGREP_REGISTRY", "SEMGREP_APP_TOKEN", "SONAR_TOKEN", "SONAR_HOST_URL", "GITHUB_TOKEN"):
+        monkeypatch.delenv(var, raising=False)
+    monkeypatch.setenv("GITHUB_TOKEN", "x")
+    monkeypatch.setattr(sast_scanner, "semgrep_available", lambda *_: False)
+    assert cli.main(["setup", "--dir", str(tmp_path), "--write-env"]) == 0
+    out = capsys.readouterr().out
+    assert (tmp_path / ".env").read_text() == cli.ENV_TEMPLATE
+    assert "semgrep registry packs  off" in out and "GITHUB_TOKEN            on" in out
+    (tmp_path / ".env").write_text("KEEP=1\n")
+    cli.main(["setup", "--dir", str(tmp_path), "--write-env"])
+    assert (tmp_path / ".env").read_text() == "KEEP=1\n" and "left untouched" in capsys.readouterr().out
+
+
+def test_env_template_matches_cli():
+    from pathlib import Path
+    assert Path(__file__).parent.parent.joinpath(".env_template").read_text() == cli.ENV_TEMPLATE
+
+
 def test_watch_once(monkeypatch, tmp_path, capsys):
     (tmp_path / "requirements.txt").write_text("pyyaml==6.0\n")
     feed = [{"id": "CVE-2026-9", "url": "u", "title": "CVE-2026-9: RCE in PyYAML", "content_text": "PyYAML for Python"}]

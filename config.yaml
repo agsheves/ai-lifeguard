@@ -27,7 +27,7 @@ ai_lifeguard:
   cve_feed_url: "https://cve.now/feed?format=json"
 
   semgrep:
-    registry: true
+    registry: false   # true = also fetch Semgrep registry packs; see THIRD_PARTY_NOTICES.md
     timeout: 600
 
   sonar:

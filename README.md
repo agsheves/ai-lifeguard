@@ -22,7 +22,7 @@ AI Lifeguard catches these threats with fast, local, regex-based checks. No exte
 | **connection_validator** | Homograph attacks, typosquatting, punycode spoofing, IP obfuscation, subdomain spoofing |
 | **mcp_guardian** | Name spoofing, permission overreach, untrusted servers, tool shadowing |
 | **dependency_auditor** | Dependencies named in new CVEs (cve.now feed), background watch, GitHub issue notifier |
-| **sast_scanner** | Semgrep static analysis: bundled rule pack for agent code plus registry packs |
+| **sast_scanner** | Semgrep static analysis: bundled MIT rule pack for agent code, registry packs opt-in |
 | **sonar_adapter** | Open SonarQube issues and quality-gate status pulled into the same report format |
 
 ## Install
@@ -118,7 +118,7 @@ The five behaviour guards above are offline and regex-only. Since AI made bug-hu
 ```python
 guard = Lifeguard.from_config("config.yaml")
 
-report = guard.scan_sast("./src")          # Semgrep: bundled rule pack + p/python + p/default
+report = guard.scan_sast("./src")          # Semgrep: bundled rule pack (+ registry packs if opted in)
 report = guard.scan_dependencies(".")      # requirements/pyproject/package.json vs cve.now feed
 report = guard.scan_sonar()                # open SonarQube issues + quality gate (needs SONAR_TOKEN)
 reports = guard.scan_all("./src", network=True)   # everything
@@ -142,7 +142,25 @@ ai-lifeguard scan --dir src --sast --deps --fail-on high      # exit 1 on high/c
 ai-lifeguard watch --dir . --github-repo owner/name           # opens a GitHub issue per new CVE match
 ```
 
-The bundled Semgrep rules live in `src/ai_lifeguard/defaults/semgrep_rules.yaml` (MIT). Registry packs are fetched by your own Semgrep install with metrics off; set `semgrep.registry: false` to stay offline. This repo runs all of this on itself in `.github/workflows/security.yml`; see `deploy/` for the hosted watcher and SonarQube server.
+The bundled Semgrep rules live in `src/ai_lifeguard/defaults/semgrep_rules.yaml` (MIT) and run by default. Semgrep's registry packs (`p/python`, `p/default`) are off by default because they carry the Semgrep Rules License (internal use, not for competing products). Opt in with `SEMGREP_REGISTRY=true`, `semgrep.registry: true` or `scan --registry`; your own Semgrep install fetches them with metrics off. This repo runs all of this on itself in `.github/workflows/security.yml`; see `deploy/` for the hosted watcher and SonarQube server.
+
+## Setting Up Your Fork
+
+Everything optional is keyed off environment variables, so a fork needs no code changes.
+
+```bash
+pip install -e .[sast]
+ai-lifeguard setup --write-env   # writes .env from .env_template if none exists, then shows what is on/off
+```
+
+| Key | Used by | Where to get it |
+|---|---|---|
+| `SEMGREP_REGISTRY` | `scan --sast`, CI | Set `true` only if your use fits the Semgrep Rules License (see `THIRD_PARTY_NOTICES.md`). In GitHub, a repository **variable**. |
+| `SEMGREP_APP_TOKEN` | Semgrep | Optional. semgrep.dev → Settings → Tokens. Repository secret. |
+| `SONAR_TOKEN`, `SONAR_HOST_URL` | `scan_sonar()`, CI | Your SonarQube server or SonarQube Cloud. Repository secrets. Set `sonar.project_key` in `config.yaml` and `sonar-project.properties`. |
+| `GITHUB_TOKEN` | `ai-lifeguard watch --github-repo` | Fine-grained PAT, Issues: read/write on the target repo. Set on the watcher host, not in CI. |
+
+`.env` is gitignored. Load it with your shell or process manager; the library only reads `os.environ`.
 
 ## Configuration
 
@@ -162,7 +180,7 @@ ai_lifeguard:
       publisher: "anthropic"
 
   semgrep:
-    registry: true          # false = bundled rules only, no network
+    registry: false         # true = also fetch Semgrep registry packs (needs network; see THIRD_PARTY_NOTICES.md)
 
   sonar:
     host_url: "https://sonarcloud.io"   # or your SonarQube Community Build server
@@ -204,7 +222,7 @@ guard.help()  # prints full method reference
 
 ## License
 
-MIT
+MIT. The tools and feeds the optional scanners call keep their own licences; see `THIRD_PARTY_NOTICES.md`.
 
 ---
 

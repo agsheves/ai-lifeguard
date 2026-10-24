@@ -1,5 +1,6 @@
 import json
 import logging
+import os
 import shutil
 import subprocess
 from pathlib import Path
@@ -11,13 +12,21 @@ LOCAL_RULES = Path(__file__).parent / "defaults" / "semgrep_rules.yaml"
 REGISTRY_CONFIGS = ("p/python", "p/default")
 SEVERITY_LEVELS = {"ERROR": "high", "WARNING": "medium", "INFO": "low"}
 OK_EXIT_CODES = (0, 1)
+REGISTRY_ENV = "SEMGREP_REGISTRY"
 
 
 def semgrep_available(semgrep_bin="semgrep"):
     return shutil.which(semgrep_bin) is not None
 
 
-def default_configs(registry=True):
+def registry_enabled(config=None):
+    """Semgrep registry packs are opt-in: config key wins, then SEMGREP_REGISTRY env, else off."""
+    if config and "registry" in config:
+        return bool(config["registry"])
+    return os.environ.get(REGISTRY_ENV, "").lower() in ("1", "true", "yes")
+
+
+def default_configs(registry=False):
     configs = [str(LOCAL_RULES)]
     if registry:
         configs.extend(REGISTRY_CONFIGS)
@@ -45,7 +54,7 @@ def _to_threat(finding):
     )
 
 
-def scan_sast(directory, configs=None, registry=True, timeout=600, semgrep_bin="semgrep"):
+def scan_sast(directory, configs=None, registry=False, timeout=600, semgrep_bin="semgrep"):
     report = ScanReport(module="sast_scanner")
     if not semgrep_available(semgrep_bin):
         log.warning("semgrep not installed; run: pip install ai-lifeguard[sast]")

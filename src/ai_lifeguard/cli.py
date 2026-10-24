@@ -3,10 +3,27 @@ import json
 import logging
 import os
 import sys
-from . import Lifeguard
+from pathlib import Path
+from . import Lifeguard, sast_scanner
 from .github_notifier import GitHubIssueNotifier
 
 LEVEL_ORDER = ["none", "low", "medium", "high", "critical"]
+ENV_TEMPLATE = """# AI Lifeguard integrations. Copy to .env (gitignored) and fill in what you use.
+# Every integration is optional and off until its key is present. See THIRD_PARTY_NOTICES.md.
+
+# Semgrep registry packs (p/python, p/default). Semgrep Rules License: internal use only,
+# not for competing products. Set to true to opt in; the bundled MIT rule pack always runs.
+SEMGREP_REGISTRY=false
+# Optional: token from semgrep.dev so your Semgrep fetches rules as a logged-in user.
+SEMGREP_APP_TOKEN=
+
+# SonarQube: token from your server or SonarQube Cloud. Host URL only for self-hosted.
+SONAR_TOKEN=
+SONAR_HOST_URL=
+
+# GitHub fine-grained PAT with Issues: read/write on the target repo (ai-lifeguard watch --github-repo).
+GITHUB_TOKEN=
+"""
 
 
 def _rank(level):
@@ -42,7 +59,7 @@ def cmd_scan(args):
     if args.all or not (args.sast or args.deps or args.sonar):
         reports.extend(guard.scan_all(args.dir))
     if args.sast:
-        reports.append(guard.scan_sast(args.dir))
+        reports.append(guard.scan_sast(args.dir, registry=True if args.registry else None))
     if args.deps:
         reports.append(guard.scan_dependencies(args.dir))
     if args.sonar:
@@ -77,6 +94,30 @@ def cmd_watch(args):
     return 0
 
 
+def cmd_setup(args):
+    guard = _guard(args.config)
+    env = lambda name: bool(os.environ.get(name))
+    rows = [
+        ("semgrep binary", sast_scanner.semgrep_available(), "pip install ai-lifeguard[sast]"),
+        ("semgrep registry packs", sast_scanner.registry_enabled(guard.config.get("semgrep")), "SEMGREP_REGISTRY=true or semgrep.registry: true (licence: THIRD_PARTY_NOTICES.md)"),
+        ("SEMGREP_APP_TOKEN", env("SEMGREP_APP_TOKEN"), "optional; token from semgrep.dev"),
+        ("SONAR_TOKEN", env("SONAR_TOKEN"), "token from your SonarQube server or SonarQube Cloud"),
+        ("SONAR_HOST_URL", env("SONAR_HOST_URL"), "self-hosted Sonar only; Cloud uses sonar.host_url in config"),
+        ("GITHUB_TOKEN", env("GITHUB_TOKEN"), "fine-grained PAT, Issues: read/write, for watch --github-repo"),
+    ]
+    if args.write_env:
+        target = Path(args.dir) / ".env"
+        if target.exists():
+            print(f"{target} exists; left untouched")
+        else:
+            target.write_text(ENV_TEMPLATE)
+            print(f"wrote {target}; fill in the keys you use")
+    print(f"{'integration':<24}{'status':<10}how to enable")
+    for name, on, how in rows:
+        print(f"{name:<24}{'on' if on else 'off':<10}{'' if on else how}")
+    return 0
+
+
 def build_parser():
     parser = argparse.ArgumentParser(prog="ai-lifeguard", description="Scan code and dependencies, or watch for new CVEs")
     parser.add_argument("--config", help="config.yaml or .json")
@@ -84,7 +125,8 @@ def build_parser():
     scan = sub.add_parser("scan", help="run scanners once and exit non-zero on findings")
     scan.add_argument("--dir", default=".")
     scan.add_argument("--all", action="store_true", help="behaviour scanners (default when no other flag given)")
-    scan.add_argument("--sast", action="store_true", help="Semgrep scan")
+    scan.add_argument("--sast", action="store_true", help="Semgrep scan (bundled rule pack)")
+    scan.add_argument("--registry", action="store_true", help="also use Semgrep registry packs (opt-in, see THIRD_PARTY_NOTICES.md)")
     scan.add_argument("--deps", action="store_true", help="dependency CVE scan (network)")
     scan.add_argument("--sonar", action="store_true", help="pull SonarQube issues (network, needs SONAR_TOKEN)")
     scan.add_argument("--fail-on", default="high", choices=LEVEL_ORDER[1:])
@@ -96,6 +138,10 @@ def build_parser():
     watch.add_argument("--github-repo", help="owner/name to open issues in (needs GITHUB_TOKEN)")
     watch.add_argument("--once", action="store_true", help="poll once and exit 1 if anything matched")
     watch.set_defaults(func=cmd_watch)
+    setup = sub.add_parser("setup", help="show which optional tools and keys are configured")
+    setup.add_argument("--dir", default=".")
+    setup.add_argument("--write-env", action="store_true", help="write a .env template here if none exists")
+    setup.set_defaults(func=cmd_setup)
     return parser
 
 

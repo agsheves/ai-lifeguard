@@ -1,6 +1,11 @@
 # Session notes
 Newest entry first. 150 words max per entry.
 
+## 2026-10-24T13:42Z Deep-Thought
+- Activity: licensing pass. LICENSE verbatim MIT again; THIRD_PARTY_NOTICES.md lists Semgrep (LGPL engine, Rules License packs), cve.now (CC BY 4.0), Sonar (LGPL), PyYAML. Registry packs opt-in via SEMGREP_REGISTRY / semgrep.registry / `scan --registry`; CI gates on repo var SEMGREP_REGISTRY, passes SEMGREP_APP_TOKEN. GitHub issues carry cve.now attribution. Fork setup: `.env_template` + `ai-lifeguard setup --write-env`. 147 tests, dogfood clean.
+- Decisions: registry default off (Semgrep Rules License bars competing products; we are a scanner). Env keys are the only setup surface; no secrets in config files.
+- Next: Andrew decides AL-004 (Basecamp 10439318323), still AL-001..003 and Dependabot PRs #1 #2.
+
 ## 2026-10-23T00:59Z Deep-Thought
 - Activity: first CI runs after Andrew pushed. Fixed Py3.10 pyproject parse (tomllib fallback), replaced nosemgrep with HTTP-only OpenerDirector, renamed bad fixtures to .py.txt, CodeQL action v4. Run 39881191703 all 6 jobs green; 0 open code-scanning alerts.
 - Decisions: suppress nothing in SARIF; fix code instead. Pass `-R agsheves/ai-lifeguard` to gh (local remote still points at old repo path; repoint denied by auto mode).

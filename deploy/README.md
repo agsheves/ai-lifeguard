@@ -10,6 +10,8 @@ Everything in AI Lifeguard runs on device or in CI. Two pieces benefit from a lo
  watcher server ──ai-lifeguard watch──▶ cve.now feed ──match──▶ GitHub issue on the repo
 ```
 
+Keys for every piece are listed in `.env_template` at the repo root; `ai-lifeguard setup` shows which are present.
+
 ## 1. SonarQube server (AL-001)
 
 Two options, same adapter either way: `sonar.host_url` + `project_key` in config, token in `SONAR_TOKEN`.

@@ -19,7 +19,7 @@ Dev — scan your codebase:
 
 Code & dependency security (opt-in; shells out or uses the network):
 
-  guard.scan_sast("./src")         Semgrep: bundled rule pack + p/python + p/default
+  guard.scan_sast("./src")         Semgrep: bundled rule pack (+ registry packs if opted in)
   guard.scan_dependencies(".")     Match requirements/pyproject/package.json against cve.now
   guard.scan_sonar()               Pull open issues + quality gate from SonarQube (config: sonar:)
   guard.check_dependency("pkg==1.0")      Check one dependency against the CVE feed
@@ -29,6 +29,7 @@ Code & dependency security (opt-in; shells out or uses the network):
   pip install ai-lifeguard[sast]   installs semgrep
   ai-lifeguard scan --dir . --sast --deps --fail-on high     CLI for CI
   ai-lifeguard watch --dir . --github-repo owner/name        Hosted watcher -> GitHub issues
+  ai-lifeguard setup [--write-env]                            Show which keys/tools are configured
 
 Production — check individual inputs:
 

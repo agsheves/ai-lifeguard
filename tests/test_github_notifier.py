@@ -26,6 +26,7 @@ def test_opens_issue_when_absent():
     assert method == "POST" and path == "/repos/owner/repo/issues"
     assert data["title"] == "[ai-lifeguard] CVE-2026-1004: dependency match (medium)"
     assert data["labels"] == ["security", "cve"] and "cve.now/CVE-2026-1004" in data["body"]
+    assert "CC BY 4.0" in data["body"] and "not endorsed by NVD" in data["body"]
 
 
 def test_dedupes_existing():

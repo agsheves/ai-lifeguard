@@ -49,9 +49,23 @@ def test_registry_configs_included_then_dropped_on_failure(monkeypatch):
             return subprocess.CompletedProcess(cmd, 7, "", "registry unreachable")
         return subprocess.CompletedProcess(cmd, 0, json.dumps({"results": [], "paths": {"scanned": ["a.py"]}}), "")
     monkeypatch.setattr(subprocess, "run", run)
-    report = ss.scan_sast("src")
+    report = ss.scan_sast("src", registry=True)
     assert len(calls) == 2 and "p/default" in calls[0] and "p/python" not in calls[1]
     assert report.clean and report.files_scanned == 1
+
+
+def test_registry_off_by_default(monkeypatch):
+    monkeypatch.delenv(ss.REGISTRY_ENV, raising=False)
+    assert ss.default_configs() == [str(ss.LOCAL_RULES)]
+    assert ss.registry_enabled() is False and ss.registry_enabled({}) is False
+    monkeypatch.setenv(ss.REGISTRY_ENV, "true")
+    assert ss.registry_enabled() is True
+    assert ss.registry_enabled({"registry": False}) is False
+    monkeypatch.setattr(ss, "semgrep_available", lambda *_: True)
+    run, calls = _fake_run()
+    monkeypatch.setattr(subprocess, "run", run)
+    ss.scan_sast("src")
+    assert "p/python" not in calls[0]
 
 
 def test_tool_missing(monkeypatch):

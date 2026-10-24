@@ -93,7 +93,7 @@ class Lifeguard:
             self.scan_mcps(directory),
         ]
         if sast_scanner.semgrep_available():
-            reports.append(self.scan_sast(directory, registry=network))
+            reports.append(self.scan_sast(directory, registry=None if network else False))
         if network:
             reports.append(self.scan_dependencies(directory))
             if self.config.get("sonar"):
@@ -130,7 +130,7 @@ class Lifeguard:
     def scan_sast(self, directory=".", registry=None):
         cfg = self.config.get("semgrep", {})
         if registry is None:
-            registry = cfg.get("registry", True)
+            registry = sast_scanner.registry_enabled(cfg)
         report = sast_scanner.scan_sast(
             directory, configs=cfg.get("configs") or None, registry=registry,
             timeout=cfg.get("timeout", 600),

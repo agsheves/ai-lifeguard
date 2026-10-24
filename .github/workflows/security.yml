@@ -33,11 +33,13 @@ jobs:
     if: github.actor != 'dependabot[bot]'
     steps:
       - uses: actions/checkout@v4
-      - name: Semgrep (bundled pack + registry)
+      - name: Semgrep (bundled pack; registry packs when SEMGREP_REGISTRY=true)
+        env:
+          SEMGREP_APP_TOKEN: ${{ secrets.SEMGREP_APP_TOKEN }}
+          REGISTRY: ${{ vars.SEMGREP_REGISTRY == 'true' && '--config p/python --config p/default' || '' }}
         run: >
           semgrep scan
-          --config src/ai_lifeguard/defaults/semgrep_rules.yaml
-          --config p/python --config p/default
+          --config src/ai_lifeguard/defaults/semgrep_rules.yaml $REGISTRY
           --metrics=off --error --sarif-output=semgrep.sarif src/
       - uses: github/codeql-action/upload-sarif@v4
         if: always()
@@ -53,6 +55,9 @@ jobs:
           python-version: "3.12"
       - run: pip install -e .[sast]
       - name: Dogfood SAST on our own source
+        env:
+          SEMGREP_APP_TOKEN: ${{ secrets.SEMGREP_APP_TOKEN }}
+          SEMGREP_REGISTRY: ${{ vars.SEMGREP_REGISTRY }}
         run: ai-lifeguard scan --dir src --sast --fail-on high
       - name: Dependencies vs cve.now feed
         run: ai-lifeguard scan --dir . --deps --fail-on high
